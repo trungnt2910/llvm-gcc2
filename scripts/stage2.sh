@@ -92,6 +92,7 @@ cmake -G Ninja                                                  \
     -DLLVM_ENABLE_LIBCXX=ON                                     \
     -DLLVM_INCLUDE_TESTS=OFF                                    \
     -DLLVM_PARALLEL_LINK_JOBS=1                                 \
+    -DCLANG_INCLUDE_TESTS=ON                                    \
     ../llvm
 
 ninja install

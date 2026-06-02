@@ -59,6 +59,7 @@ cmake -G Ninja                                                          \
     -DLLVM_INCLUDE_TESTS=OFF                                            \
     -DLLVM_PARALLEL_LINK_JOBS=1                                         \
     -DLLVM_DEFAULT_TARGET_TRIPLE="i486-linux-gnu"                       \
+    -DCLANG_INCLUDE_TESTS=ON                                            \
     -DLIBCXX_CXX_ABI="gcc2"                                             \
     -DLIBCXX_CXX_ABI_LIBRARY_PATH="$GCC2_LIBRARY_PATH"                  \
     -DLIBCXX_ADDITIONAL_COMPILE_FLAGS="$STAGE3_LIBCXX_CFLAGS"           \
