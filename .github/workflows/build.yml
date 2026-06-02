@@ -1,0 +1,196 @@
+name: Build LLVM GCC2
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'ref from llvm/llvm-project to build (empty for latest from dev)'
+        required: false
+        default: ''
+
+jobs:
+  determine-ref:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.determine-ref.outputs.ref }}
+    steps:
+      - name: Determine Git Ref
+        id: determine-ref
+        run: |
+          if [[ -z "${{ inputs.ref }}" ]]; then
+            REF=$(
+                git ls-remote https://github.com/trungnt2910/llvm-project \
+                    refs/heads/dev/trungnt2910/llvm-gcc2 |                \
+                awk '{print $1}'
+            )
+            echo "Determined latest ref from dev/trungnt2910/llvm-gcc2: $REF"
+          else
+            REF="${{ inputs.ref }}"
+            echo "Using provided ref: $REF"
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+  stage1:
+    needs: determine-ref
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+
+      - name: Create Linux GCC2 Sysroot
+        run: |
+          pushd ${{ github.workspace }}/scripts
+          bash linux-gcc2-sysroot.sh
+          popd
+
+      - name: Clone LLVM Project
+        run: |
+          mkdir -p ${{ github.workspace }}/llvm-project
+          pushd ${{ github.workspace }}/llvm-project
+          git init
+          git remote add origin https://github.com/llvm/llvm-project.git
+          git fetch --depth=1 origin "${{ needs.determine-ref.outputs.ref }}"
+          git checkout FETCH_HEAD
+          popd
+
+      - name: Build Stage 1
+        run: |
+          pushd ${{ github.workspace }}/llvm-project
+          bash ${{ github.workspace }}/scripts/stage1.sh
+          popd
+
+      - name: Test Stage 1
+        run: |
+          pushd ${{ github.workspace }}/llvm-project
+          ./build_stage1/bin/llvm-lit -v clang/test/CodeGenCXX/gcc2-abi
+          popd
+
+      - name: Package Stage 1
+        run: |
+          pushd ${{ github.workspace }}
+          tar -cJf stage1.tar.xz -C llvm-project/build_stage1_install .
+          popd
+
+      - name: Upload Stage 1 Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage1
+          path: ${{ github.workspace }}/stage1.tar.xz
+
+  stage2:
+    needs: [determine-ref, stage1]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+
+      - name: Create Linux GCC2 Sysroot
+        run: |
+          pushd ${{ github.workspace }}/scripts
+          bash linux-gcc2-sysroot.sh
+          popd
+
+      - name: Clone LLVM Project
+        run: |
+          mkdir -p ${{ github.workspace }}/llvm-project
+          pushd ${{ github.workspace }}/llvm-project
+          git init
+          git remote add origin https://github.com/llvm/llvm-project.git
+          git fetch --depth=1 origin "${{ needs.determine-ref.outputs.ref }}"
+          git checkout FETCH_HEAD
+          popd
+
+      - name: Download Stage 1 Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: stage1
+          path: ${{ github.workspace }}/stage1-download
+
+      - name: Extract Stage 1 Artifact
+        run: |
+          mkdir -p ${{ github.workspace }}/llvm-project/build_stage1_install
+          tar -xJf ${{ github.workspace }}/stage1-download/stage1.tar.xz -C \
+            ${{ github.workspace }}/llvm-project/build_stage1_install
+
+      - name: Build Stage 2
+        run: |
+          pushd ${{ github.workspace }}/llvm-project
+          bash ${{ github.workspace }}/scripts/stage2.sh
+          popd
+
+      - name: Package Stage 2
+        run: |
+          pushd ${{ github.workspace }}
+          tar -cJf stage2.tar.xz -C llvm-project/build_stage2_install .
+          popd
+
+      - name: Upload Stage 2 Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage2
+          path: ${{ github.workspace }}/stage2.tar.xz
+
+  stage3:
+    needs: [determine-ref, stage2]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+
+      - name: Create Linux GCC2 Sysroot
+        run: |
+          pushd ${{ github.workspace }}/scripts
+          bash linux-gcc2-sysroot.sh
+          popd
+
+      - name: Clone LLVM Project
+        run: |
+          mkdir -p ${{ github.workspace }}/llvm-project
+          pushd ${{ github.workspace }}/llvm-project
+          git init
+          git remote add origin https://github.com/llvm/llvm-project.git
+          git fetch --depth=1 origin "${{ needs.determine-ref.outputs.ref }}"
+          git checkout FETCH_HEAD
+          popd
+
+      - name: Download Stage 2 Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: stage2
+          path: ${{ github.workspace }}/stage2-download
+
+      - name: Extract Stage 2 Artifact
+        run: |
+          mkdir -p ${{ github.workspace }}/llvm-project/build_stage2_install
+          tar -xJf ${{ github.workspace }}/stage2-download/stage2.tar.xz -C \
+            ${{ github.workspace }}/llvm-project/build_stage2_install
+
+      - name: Build Stage 3
+        run: |
+          pushd ${{ github.workspace }}/llvm-project
+          bash ${{ github.workspace }}/scripts/stage3.sh
+          popd
+
+      - name: Package Stage 3
+        run: |
+          pushd ${{ github.workspace }}
+          tar -cJf stage3.tar.xz -C llvm-project/build_stage3_install .
+          popd
+
+      - name: Upload Stage 3 Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage3
+          path: ${{ github.workspace }}/stage3.tar.xz
