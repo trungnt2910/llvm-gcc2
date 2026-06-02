@@ -126,6 +126,16 @@ jobs:
           bash ${{ github.workspace }}/scripts/stage2.sh
           popd
 
+      - name: Test Stage 2
+        run: |
+          STAGE2_LIB="${{ github.workspace }}/llvm-project/build_stage2_install/lib"
+          GCC2_LIB="${{ github.workspace }}/scripts/gcc2/usr/lib"
+          export LD_LIBRARY_PATH="$STAGE2_LIB:$GCC2_LIB:$LD_LIBRARY_PATH"
+
+          pushd ${{ github.workspace }}/llvm-project
+          ./build_stage2/bin/llvm-lit -v clang/test/CodeGenCXX/gcc2-abi
+          popd
+
       - name: Package Stage 2
         run: |
           pushd ${{ github.workspace }}
@@ -181,6 +191,33 @@ jobs:
         run: |
           pushd ${{ github.workspace }}/llvm-project
           bash ${{ github.workspace }}/scripts/stage3.sh
+          popd
+
+      - name: Test Stage 3
+        run: |
+          # Even though stage 3 bins are built against stage 2 libs,
+          # we might want to do this as a sanity check for stage 3 libs.
+          STAGE3_LIB="${{ github.workspace }}/llvm-project/build_stage3_install/lib"
+          GCC2_LIB="${{ github.workspace }}/scripts/gcc2/usr/lib"
+          export LD_LIBRARY_PATH="$STAGE3_LIB:$GCC2_LIB:$LD_LIBRARY_PATH"
+
+          pushd ${{ github.workspace }}/llvm-project
+          ./build_stage3/bin/llvm-lit -v clang/test/CodeGenCXX/gcc2-abi
+          popd
+
+          # Extra tests for interop verification.
+          git clone https://github.com/trungnt2910/interslop --depth 1
+          pushd ${{ github.workspace }}/interslop
+          run_tests() {
+            ./run_interop_tests.sh                                                              \
+              --gcc-dir="${{ github.workspace }}/scripts/gcc2"                                  \
+              --clangxx="${{ github.workspace }}/llvm-project/build_stage3_install/bin/clang++" \
+              "$@";
+          }
+          run_tests -O0
+          run_tests -O1
+          run_tests -O2
+          run_tests -O3
           popd
 
       - name: Package Stage 3
