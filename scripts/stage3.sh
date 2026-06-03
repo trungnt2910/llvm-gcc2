@@ -56,6 +56,7 @@ cmake -G Ninja                                                          \
     -DLLVM_ENABLE_RUNTIMES="libcxx"                                     \
     -DLLVM_ENABLE_ASSERTIONS=OFF                                        \
     -DLLVM_ENABLE_LIBCXX=ON                                             \
+    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF                            \
     -DLLVM_INCLUDE_TESTS=OFF                                            \
     -DLLVM_PARALLEL_LINK_JOBS=1                                         \
     -DLLVM_DEFAULT_TARGET_TRIPLE="i486-linux-gnu"                       \
