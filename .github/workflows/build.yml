@@ -216,3 +216,66 @@ jobs:
         with:
           name: stage3
           path: ${{ github.workspace }}/stage3.tar.xz
+
+  stage3-haiku:
+    needs: [determine-ref, stage2]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib
+
+      - name: Create Linux GCC2 Sysroot
+        run: |
+          pushd ${{ github.workspace }}/scripts
+          bash linux-gcc2-sysroot.sh
+          popd
+
+      - name: Create Haiku GCC2 Sysroot
+        run: |
+          pushd ${{ github.workspace }}/scripts
+          bash haiku-gcc2-sysroot.sh
+          popd
+
+      - name: Clone LLVM Project
+        run: |
+          mkdir -p ${{ github.workspace }}/llvm-project
+          pushd ${{ github.workspace }}/llvm-project
+          git init
+          git remote add origin https://github.com/llvm/llvm-project.git
+          git fetch --depth=1 origin "${{ needs.determine-ref.outputs.ref }}"
+          git checkout FETCH_HEAD
+          popd
+
+      - name: Download Stage 2 Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: stage2
+          path: ${{ github.workspace }}/stage2-download
+
+      - name: Extract Stage 2 Artifact
+        run: |
+          mkdir -p ${{ github.workspace }}/llvm-project/build_stage2_install
+          tar -xvJf ${{ github.workspace }}/stage2-download/stage2.tar.xz -C \
+            ${{ github.workspace }}/llvm-project/build_stage2_install
+
+      - name: Build Stage 3 (Haiku Cross)
+        run: |
+          pushd ${{ github.workspace }}/llvm-project
+          bash ${{ github.workspace }}/scripts/stage3.haiku.sh
+          popd
+
+      - name: Package Stage 3 (Haiku Cross)
+        run: |
+          pushd ${{ github.workspace }}
+          tar -cvJf stage3.haiku.tar.xz -C llvm-project/build_stage3_install .
+          popd
+
+      - name: Upload Stage 3 Artifact (Haiku Cross)
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage3.haiku
+          path: ${{ github.workspace }}/stage3.haiku.tar.xz
