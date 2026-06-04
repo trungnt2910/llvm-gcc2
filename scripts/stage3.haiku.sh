@@ -28,13 +28,13 @@ pushd "$SCRIPT_DIR"
 echo "
 #include <runtime_loader/runtime_loader.h>
 struct tls_index {
-	unsigned long ti_module;
-	unsigned long ti_offset;
+    unsigned long int module;
+    unsigned long int offset;
 };
-void *
-___tls_get_addr(struct tls_index *ti)
+void* __attribute__((__regparm__(1)))
+___tls_get_addr(struct tls_index* ti)
 {
-	return __gRuntimeLoader->get_tls_address(ti->ti_module, ti->ti_offset);
+    return __gRuntimeLoader->get_tls_address(ti->module, ti->offset);
 }
 " > tls.c
 HAIKU_TLS_SYSTEM_HEADERS="
