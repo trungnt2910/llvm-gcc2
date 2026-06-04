@@ -115,12 +115,14 @@ pushd build_stage3
 STAGE3_LIB="$(realpath ../build_stage3_install/lib)"
 STAGE3_INCLUDE="$(realpath ../build_stage3_install/include)"
 
+# Be ABSOLUTELY sure that libc++ is linked before libroot.
+# Otherwise, libroot will literally clog our std::clog symbol.
 STAGE3_CFLAGS="                                                 \
     -fc++-abi=gcc2                                              \
     -fno-vtable-thunks                                          \
     -no-pie -fPIC                                               \
     -nodefaultlibs -nostdlib++ -nostdinc++                      \
-    -lroot -lc++                                                \
+    -lc++ -lroot                                                \
     --sysroot="$SCRIPT_DIR/boot"                                \
     -fuse-ld=bfd                                                \
     -Wl,--no-eh-frame-hdr                                       \
