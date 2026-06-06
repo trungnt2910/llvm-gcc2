@@ -38,13 +38,8 @@ Stage 3 is intended for release and built with assertions _off_.
 
 ## Builds
 
-Builds are currently uploaded as GitHub Actions artifacts. You can check the latest build by
-visiting the [Actions](https://github.com/trungnt2910/llvm-gcc2/actions) tab.
-
-Once the project matures, we may upload buidls as a Release.
-
-Currently, we publish builds for `i486-linux`. We are currently working on builds for `i586-haiku`
-(i.e. `x86_gcc2` Haiku).
+You can check the latest build for x86 Linux and Haiku on the
+[Releases](https://github.com/trungnt2910/llvm-gcc2/releases) tab.
 
 ## Community
 
